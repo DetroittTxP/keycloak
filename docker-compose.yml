@@ -1,33 +1,41 @@
-services:
-    postgres:
-        container_name: kc-database
-        image: postgres:16-alpine
-        volumes:
-            - postgres-kc-data:/var/lib/postgresql/data
-        environment:
-            POSTGRES_USER: keycloak
-            POSTGRES_PASSWORD: password
-            POSTGRES_DB: keycloak
-        ports:
-            - "5432:5432"
+include:
+    - docker-compose-keycloak.yml
 
-    keycloak:
-        container_name: keycloak
-        image: quay.io/keycloak/keycloak:22.0
-        environment:
-            KEYCLOAK_ADMIN: admin
-            KEYCLOAK_ADMIN_PASSWORD: password
-            KEYCLOAK_LOGLEVEL: INFO
-            ROOT_LOGLEVEL: INFO
-            KC_DB: postgres
-            KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-            KC_DB_USERNAME: keycloak
-            KC_DB_PASSWORD: password
+services:
+    node:
+        container_name: node-app
+        build:
+            context: node
+            dockerfile: dockerfile
+        user: 1000:1000
+        stdin_open: true
+        tty: true
         ports:
-            - "8080:8080"
-        depends_on:
-            - postgres
-        command: start-dev
+            - "9460:9460"
+        volumes:
+            - ./node/source:/home/node/app
+        command: sh -c "cd /home/node/app && npm install && npm run start"
+        env_file:
+            - .env
+
+    ui:
+        container_name: ui-app
+        build:
+            context: ui
+            dockerfile: dockerfile
+        user: 1000:1000
+        stdin_open: true
+        tty: true
+        ports:
+            - "4000:3000"
+        environment:
+            - KEYCLOAK_AUTH_SERVER_URL=http://keycloak:8080
+        volumes:
+            - ./ui/source:/home/node/app/ui
+            - ${HOME}/.vscode-server-keycloakui:/home/node/.vscode-server
+        command: sh -c "cd /home/node/app/ui && npm install && npm run dev"
+        env_file:
+            - .env
 
 volumes:
     postgres-kc-data:

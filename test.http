@@ -1,0 +1,7 @@
+@node = http://localhost:9460
+@issuer = http://localhost:8080/realms/microapp
+###
+GET http://localhost:8080/realms/microapp/.well-known/openid-configuration HTTP/1.1
+
+### test ####
+GET {{node}} HTTP/1.1
